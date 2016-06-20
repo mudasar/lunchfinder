@@ -1,6 +1,9 @@
 package uk.appinvent.lunchfinder;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -12,6 +15,8 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import uk.appinvent.lunchfinder.data.User;
 
 public class SignupActivity extends AppCompatActivity {
 
@@ -67,7 +72,16 @@ public class SignupActivity extends AppCompatActivity {
         //TODO: update the code to save data in database
 
         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+        User user = new User(mNameText.getText().toString(), mEmailText.getText().toString(), mPhoneText.getText().toString());
+        user.save();
 
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(getString(R.string.is_user_registered), true);
+
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
     }
 
     private class TextChangeWatcher implements TextWatcher{
