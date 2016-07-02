@@ -1,7 +1,10 @@
 package uk.appinvent.lunchfinder;
 
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.TextInputLayout;
@@ -10,15 +13,20 @@ import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import uk.appinvent.lunchfinder.data.LunchContract;
 import uk.appinvent.lunchfinder.data.User;
+import uk.appinvent.lunchfinder.sync.LunchFinderSyncAdapter;
 
 public class SignupActivity extends AppCompatActivity {
+
+    private final String TAG = SignupActivity.class.getSimpleName();
 
     private Toolbar toolbar;
     private EditText mNameText;
@@ -28,10 +36,14 @@ public class SignupActivity extends AppCompatActivity {
     private Button mBtnSignUp;
 
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
+
+
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -72,16 +84,49 @@ public class SignupActivity extends AppCompatActivity {
         //TODO: update the code to save data in database
 
         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
-        User user = new User(mNameText.getText().toString(), mEmailText.getText().toString(), mPhoneText.getText().toString());
-        user.save();
+
+        User user = new User();
+        user.setEmail( mEmailText.getText().toString());
+        user.setName(mNameText.getText().toString());
+        user.setPhone(mPhoneText.getText().toString());
+
+        // Now that the content provider is set up, inserting rows of data is pretty simple.
+        // First create a ContentValues object to hold the data you want to insert.
+        ContentValues locationValues = new ContentValues();
+
+        // Then add the data, along with the corresponding name of the data type,
+        // so the content provider knows what kind of value is being inserted.
+        locationValues.put(LunchContract.UserEntry.COLUMN_NAME, user.getName());
+        locationValues.put(LunchContract.UserEntry.COLUMN_EMAIL, user.getEmail());
+        locationValues.put(LunchContract.UserEntry.COLUMN_PHONE, user.getPhone());
+
+
+        // Finally, insert location data into the database.
+        Uri insertedUri = getApplicationContext().getContentResolver().insert(
+                LunchContract.UserEntry.CONTENT_URI,
+                locationValues
+        );
+
+        long userId  = ContentUris.parseId(insertedUri);
+
+        Log.d(TAG, "User is saved with id " + userId);
 
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putBoolean(getString(R.string.is_user_registered), true);
+        editor.commit();
+
+        //sync data
+        loadData();
 
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
+    }
+
+    private void loadData() {
+
+        LunchFinderSyncAdapter.syncImmediately(this);
     }
 
     private class TextChangeWatcher implements TextWatcher{

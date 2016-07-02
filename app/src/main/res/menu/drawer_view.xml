@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_drawer_home"
+            android:title="@string/nav_home" />
+        <item
+            android:id="@+id/nav_curry"
+            android:icon="@drawable/ic_drawer_curry"
+            android:title="@string/nav_curry" />
+        <item
+            android:id="@+id/nav_pasta"
+            android:icon="@drawable/ic_drawer_pasta"
+            android:title="@string/nav_pasta" />
+
+        <item
+            android:id="@+id/nav_salad"
+            android:icon="@drawable/ic_drawer_salad"
+            android:title="@string/nav_salad" />
+
+        <item
+            android:id="@+id/nav_sandwich"
+            android:icon="@drawable/ic_drawer_sandwich"
+            android:title="@string/nav_sandwich" />
+    </group>
+</menu>
