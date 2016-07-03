@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "260572040843",
+    "firebase_url": "https://lunch-finder.firebaseio.com",
+    "project_id": "firebase-lunch-finder",
+    "storage_bucket": "firebase-lunch-finder.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:260572040843:android:ba987ff46f8999df",
+        "android_client_info": {
+          "package_name": "uk.appinvent.lunchfinder"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "260572040843-v3a6it6l7pgmb73btpi3e9csi8mui1hn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB75rBTeb9IZJDWCwpoCMzCeo8vuNzNeec"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

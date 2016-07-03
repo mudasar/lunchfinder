@@ -125,7 +125,7 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                share();
+                share(dish.getId());
             }
         });
 
@@ -153,16 +153,18 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
         return null;
     }
 
-    private void share() {
+    private void share(long id) {
         Intent share = new Intent(android.content.Intent.ACTION_SEND);
         share.setType("text/plain");
         share.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 
         // Add data to the intent, the receiving app will decide
         // what to do with it.
+        String url = "lunchfinder://uk.appinvent/dish/"+id;
         share.putExtra(Intent.EXTRA_SUBJECT, "Lunchfinder share");
-        share.putExtra(Intent.EXTRA_TEXT, "http://");
-
+        share.putExtra(Intent.EXTRA_TEXT, url);
+        share.putExtra(Intent.EXTRA_HTML_TEXT, "<a href='"+url+"'>Lunch Finder</a>");
+       Log.d(LOG_TAG, share.toUri(Intent.URI_INTENT_SCHEME).toString());
         startActivity(Intent.createChooser(share, "Share a Meal!"));
     }
 
@@ -171,6 +173,7 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
     //TODO: link the dish details to view items
         if (data != null && data.moveToFirst()) {
             dish = new Dish();
+            dish.setId(data.getLong( DishLoader.Query._ID));
             dish.setRefId(data.getLong(DishLoader.Query.COLUMN_REF_ID));
             dish.setName(data.getString(DishLoader.Query.COLUMN_NAME));
             dish.setDescription(data.getString(DishLoader.Query.COLUMN_DESCRIPTION));

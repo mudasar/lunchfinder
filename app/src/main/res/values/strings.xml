@@ -33,7 +33,7 @@
     <string name="nav_pasta">Pasta</string>
     <string name="nav_salad">Salad</string>
     <string name="nav_sandwich">Sandwich</string>
-    <string name="appwidget_text">EXAMPLE</string>
+    <string name="appwidget_text">Loading</string>
     <string name="configure">Configure</string>
     <string name="add_widget">Add widget</string>
 

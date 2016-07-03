@@ -138,4 +138,12 @@ public class Dish  {
     public void setRefId(long refId) {
         this.refId = refId;
     }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public long getId() {
+        return id;
+    }
 }

@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
     private final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final String DETAILFRAGMENT_TAG = "DFTAG";
     private static final String CATEGORYFRAGMENT_TAG = "CFTAG";
+    public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
      private User user;
     private List<Dish> dishList;
 

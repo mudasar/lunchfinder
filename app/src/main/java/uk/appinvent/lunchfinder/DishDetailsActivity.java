@@ -1,11 +1,12 @@
 package uk.appinvent.lunchfinder;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
+
+import uk.appinvent.lunchfinder.data.LunchContract;
 
 public class DishDetailsActivity extends AppCompatActivity {
 
@@ -16,12 +17,32 @@ public class DishDetailsActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
-
         Bundle arguments = new Bundle();
-        arguments.putParcelable(DishDetailFragment.DETAIL_URI, getIntent().getData());
-        arguments.putBoolean(DishDetailFragment.DETAIL_TRANSITION_ANIMATION, true);
 
+        //Printing detail of clicked item from widget
+        Intent intent = getIntent();
+        Uri data = intent.getData();
+        if ( intent != null && intent.getType() != null &&  intent.getType().equals("text/plain")){
+            long id = Long.parseLong(data.getLastPathSegment());
+            Uri dishUri = LunchContract.DishEntry.buildDishUri(id);
+            arguments.putParcelable(DishDetailFragment.DETAIL_URI, dishUri);
+        }else{
+            arguments.putParcelable(DishDetailFragment.DETAIL_URI, getIntent().getData());
+
+        }
+//        if (intent !=null) {
+//            int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
+//                    AppWidgetManager.INVALID_APPWIDGET_ID);
+//
+//            long dishId = intent.getLongExtra(SpecialWidget.EXTRA_ID, 1);
+//
+//            Toast.makeText(getApplicationContext(), "Touched view " + dishId, Toast.LENGTH_SHORT).show();
+//        }else{
+//            Toast.makeText(getApplicationContext(), "Touched view none ", Toast.LENGTH_SHORT).show();
+//        }
+
+
+        arguments.putBoolean(DishDetailFragment.DETAIL_TRANSITION_ANIMATION, true);
         DishDetailFragment fragment = new DishDetailFragment();
         fragment.setArguments(arguments);
 

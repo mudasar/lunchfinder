@@ -4,6 +4,7 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -26,7 +27,7 @@ import uk.appinvent.lunchfinder.sync.LunchFinderSyncAdapter;
 
 public class SignupActivity extends AppCompatActivity {
 
-    private final String TAG = SignupActivity.class.getSimpleName();
+    private final String LOG_TAG = SignupActivity.class.getSimpleName();
 
     private Toolbar toolbar;
     private EditText mNameText;
@@ -35,6 +36,7 @@ public class SignupActivity extends AppCompatActivity {
     private TextInputLayout mInputLayoutName, mInputLayoutEmail, mInputLayoutPhone;
     private Button mBtnSignUp;
 
+    private User user;
 
 
     @Override
@@ -43,7 +45,10 @@ public class SignupActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
-
+        //TODO Check if user is configured   if not redirect ot signup activity
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(this);
+        boolean sentToken = sharedPreferences.getBoolean(getString(R.string.is_user_registered), false);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -66,6 +71,37 @@ public class SignupActivity extends AppCompatActivity {
                 saveUser();
             }
         });
+
+        if (sentToken){
+            // user is registered
+            // load user data
+            try {
+                // First, check if the location with this city name exists in the db
+                Cursor userCursor = getApplicationContext().getContentResolver().query(
+                        LunchContract.UserEntry.CONTENT_URI,
+                        new String[]{"*"},
+                        null,
+                        null,
+                        null);
+
+                if(userCursor != null)
+                {
+                    if (userCursor.moveToFirst()) {
+                        user = User.fromCursor(userCursor);
+                        String user_string = user.getName() + ":" + user.getPhone();
+                        mNameText.setText(user.getName());
+                        mPhoneText.setText(user.getPhone());
+                        mEmailText.setText(user.getEmail());
+                        mBtnSignUp.setText("Update Details");
+                    }
+                }
+            }catch (Exception e){
+                //TODO: remave strack trace when realese
+                e.printStackTrace();
+                Log.d(LOG_TAG,e.getMessage());
+            }
+        }
+
     }
 
     private void saveUser() {
@@ -109,7 +145,7 @@ public class SignupActivity extends AppCompatActivity {
 
         long userId  = ContentUris.parseId(insertedUri);
 
-        Log.d(TAG, "User is saved with id " + userId);
+        Log.d(LOG_TAG, "User is saved with id " + userId);
 
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
