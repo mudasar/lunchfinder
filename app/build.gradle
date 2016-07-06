@@ -5,7 +5,7 @@ android {
         config {
             keyAlias 'cert'
             keyPassword 'aliwajdan'
-            storeFile file('/Users/mudasar/Documents/android-dev/cert.jks')
+            storeFile file('/cert.jks')
             storePassword 'aliwajdan'
         }
     }
