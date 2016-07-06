@@ -8,7 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -65,7 +65,12 @@ public class CategoryFragment extends Fragment implements LoaderManager.LoaderCa
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         mRecyclerView = (RecyclerView) rootView.findViewById(R.id.dish_recycler_view);
 
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+
+        //TODO: put column size in strings
+        //Create strings for each different screen size
+        //the column size will get modified according to screen size   for small screen it 1 for large its 2
+
+        mRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(),Integer.parseInt(getString(R.string.column_size))));
         mRecyclerView.setHasFixedSize(true);
 
         mRecyclerViewAdapter = new RecyclerViewAdapter(getActivity(), new RecyclerViewAdapter.RecyclerViewAdapterOnClickHandler() {

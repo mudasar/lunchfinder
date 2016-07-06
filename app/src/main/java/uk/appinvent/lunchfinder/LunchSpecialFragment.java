@@ -8,7 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -49,7 +49,7 @@ public class LunchSpecialFragment extends Fragment implements LoaderManager.Load
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         mRecyclerView = (RecyclerView) rootView.findViewById(R.id.dish_recycler_view);
 
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(),Integer.parseInt(getString(R.string.column_size))));
         mRecyclerView.setHasFixedSize(true);
 
         mRecyclerViewAdapter = new RecyclerViewAdapter(getActivity(), new RecyclerViewAdapter.RecyclerViewAdapterOnClickHandler() {

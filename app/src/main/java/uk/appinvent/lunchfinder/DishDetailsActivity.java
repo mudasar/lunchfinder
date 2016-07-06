@@ -52,4 +52,6 @@ public class DishDetailsActivity extends AppCompatActivity {
         supportPostponeEnterTransition();
     }
 
+
+
 }

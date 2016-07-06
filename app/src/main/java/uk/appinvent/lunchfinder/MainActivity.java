@@ -21,11 +21,17 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+
 import java.util.List;
 
 import uk.appinvent.lunchfinder.data.Dish;
 import uk.appinvent.lunchfinder.data.LunchContract;
 import uk.appinvent.lunchfinder.data.User;
+import uk.appinvent.lunchfinder.notify.RegistrationIntentService;
 import uk.appinvent.lunchfinder.ui.RecyclerViewAdapter;
 
 public class MainActivity extends AppCompatActivity implements LunchSpecialFragment.Callback {
@@ -33,7 +39,8 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
 
     private final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final String DETAILFRAGMENT_TAG = "DFTAG";
-    private static final String CATEGORYFRAGMENT_TAG = "CFTAG";
+
+    private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
      private User user;
     private List<Dish> dishList;
@@ -51,19 +58,32 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
     private FragmentTransaction ft;
     private boolean mTwoPane;
 
+    private InterstitialAd mInterstitialAd;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Uri contentUri = getIntent() != null ? getIntent().getData() : null;
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        MobileAds.initialize(this, getString(R.string.banner_ad_unit_id));
+
+        // Create the InterstitialAd and set the adUnitId.
+        mInterstitialAd = new InterstitialAd(this);
+        // Defined in res/values/strings.xml
+        mInterstitialAd.setAdUnitId(getString(R.string.banner_ad_unit_id));
+
         //TODO Check if user is configured   if not redirect ot signup activity
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
-        boolean sentToken = sharedPreferences.getBoolean(getString(R.string.is_user_registered), false);
-        if (!sentToken) {
+        boolean user_registered = sharedPreferences.getBoolean(getString(R.string.is_user_registered), false);
+
+
+        if (!user_registered) {
             Intent intent = new Intent(this, SignupActivity.class);
             startActivity(intent);
         } else {
@@ -100,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
             ft = getFragmentManager().beginTransaction();
 
         }
-
+        showInterstitial();
         mActivityTitle = getTitle().toString();
         mCategoryList = getResources().getStringArray(R.array.category_array);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -136,6 +156,47 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
                     }
                 });
 
+
+        //Two pane layout is not being used didn't looked good when used with specials list and details fragment open at the same time
+        if (findViewById(R.id.dish_detail_container) != null) {
+
+            // The detail container view will be present only in the large-screen layouts
+            // (res/layout-sw600dp). If this view is present, then the activity should be
+            // in two-pane mode.
+        //    mTwoPane = true;
+            // In two-pane mode, show the detail view in this activity by
+            // adding or replacing the detail fragment using a
+            // fragment transaction.
+//            if (savedInstanceState == null) {
+//                DishDetailFragment fragment = new DishDetailFragment();
+//                if (contentUri != null) {
+//                    Bundle args = new Bundle();
+//                    args.putParcelable(DishDetailFragment.DETAIL_URI, contentUri);
+//                    fragment.setArguments(args);
+//                }
+//                getFragmentManager().beginTransaction()
+//                        .replace(R.id.dish_detail_container, fragment, DETAILFRAGMENT_TAG)
+//                        .commit();
+//            }
+        } else {
+            mTwoPane = false;
+            getSupportActionBar().setElevation(0f);
+        }
+        // If Google Play Services is up to date, we'll want to register GCM. If it is not, we'll
+        // skip the registration and this device will not receive any downstream messages from
+        // our fake server. Because weather alerts are not a core feature of the app, this should
+        // not affect the behavior of the app, from a user perspective.
+        if (checkPlayServices()) {
+            // Because this is the initial creation of the app, we'll want to be certain we have
+            // a token. If we do not, then we will start the IntentService that will register this
+            // application with GCM.
+
+            boolean sentToken = sharedPreferences.getBoolean(SENT_TOKEN_TO_SERVER, false);
+            if (!sentToken) {
+                Intent intent = new Intent(this, RegistrationIntentService.class);
+                startService(intent);
+            }
+        }
     }
 
     private void setupDrawer(Toolbar toolbar) {
@@ -152,6 +213,7 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
                 super.onDrawerClosed(view);
                 getSupportActionBar().setTitle(mActivityTitle);
                 invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+
             }
         };
 //        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.drawer_open, R.string.drawer_close) {
@@ -210,6 +272,8 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
 
 
             case R.id.action_settings:
+                Intent intent = new Intent(this, SignupActivity.class);
+                startActivity(intent);
                 return true;
         }
 
@@ -226,6 +290,15 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
                 .setData(uri);
 
         startActivity(intent);
+    }
+
+    private void showInterstitial() {
+        // Show the ad if it's ready. Otherwise toast and restart the game.
+        if (mInterstitialAd != null && mInterstitialAd.isLoaded()) {
+            mInterstitialAd.show();
+        } else {
+            Toast.makeText(this, "Ad did not load", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -248,6 +321,27 @@ public class MainActivity extends AppCompatActivity implements LunchSpecialFragm
 
             startActivity(intent);
         }
+    }
+
+    /**
+     * Check the device to make sure it has the Google Play Services APK. If
+     * it doesn't, display a dialog that allows users to download the APK from
+     * the Google Play Store or enable it in the device's system settings.
+     */
+    private boolean checkPlayServices() {
+        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        int resultCode = apiAvailability.isGooglePlayServicesAvailable(this);
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (apiAvailability.isUserResolvableError(resultCode)) {
+                apiAvailability.getErrorDialog(this, resultCode,
+                        PLAY_SERVICES_RESOLUTION_REQUEST).show();
+            } else {
+                Log.i(LOG_TAG, "This device is not supported.");
+                finish();
+            }
+            return false;
+        }
+        return true;
     }
 
 

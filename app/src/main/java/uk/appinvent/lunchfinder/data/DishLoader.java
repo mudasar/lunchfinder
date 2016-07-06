@@ -54,4 +54,22 @@ public class DishLoader extends CursorLoader {
         int COLUMN_CATEGORY = 10;
     }
 
+    public interface UserQuery{
+        String[] PROJECTION = {
+                LunchContract.UserEntry._ID,
+                LunchContract.UserEntry.COLUMN_NAME,
+                LunchContract.UserEntry.COLUMN_EMAIL,
+                LunchContract.UserEntry.COLUMN_PHONE,
+                LunchContract.UserEntry.COLUMN_PASSWORD,
+                LunchContract.UserEntry.COLUMN_UID
+        };
+
+        int _ID = 0;
+        int COLUMN_NAME = 1;
+        int COLUMN_EMAIL = 2;
+        int COLUMN_PHONE = 3;
+        int COLUMN_PASSWORD = 4;
+        int COLUMN_UID = 5;
+    }
+
 }

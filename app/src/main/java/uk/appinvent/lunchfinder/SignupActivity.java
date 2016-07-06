@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -21,6 +22,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
+import uk.appinvent.lunchfinder.data.DishLoader;
 import uk.appinvent.lunchfinder.data.LunchContract;
 import uk.appinvent.lunchfinder.data.User;
 import uk.appinvent.lunchfinder.sync.LunchFinderSyncAdapter;
@@ -37,6 +45,9 @@ public class SignupActivity extends AppCompatActivity {
     private Button mBtnSignUp;
 
     private User user;
+    private FirebaseAuth mAuth;
+    private FirebaseAuth.AuthStateListener mAuthListener;
+    boolean is_user_registered = false;
 
 
     @Override
@@ -44,11 +55,13 @@ public class SignupActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
+        mAuth = FirebaseAuth.getInstance();
+
 
         //TODO Check if user is configured   if not redirect ot signup activity
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
-        boolean sentToken = sharedPreferences.getBoolean(getString(R.string.is_user_registered), false);
+        is_user_registered = sharedPreferences.getBoolean(getString(R.string.is_user_registered), false);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -72,14 +85,32 @@ public class SignupActivity extends AppCompatActivity {
             }
         });
 
-        if (sentToken){
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
+                if (firebaseUser != null) {
+                    // User is signed in
+                    if (user == null){
+                        user = new User();
+                        user.setUid(firebaseUser.getUid());
+                    }
+                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + firebaseUser.getUid());
+                } else {
+                    // User is signed out
+                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
+                }
+            }
+        };
+
+        if (is_user_registered){
             // user is registered
             // load user data
             try {
                 // First, check if the location with this city name exists in the db
                 Cursor userCursor = getApplicationContext().getContentResolver().query(
                         LunchContract.UserEntry.CONTENT_URI,
-                        new String[]{"*"},
+                        DishLoader.UserQuery.PROJECTION,
                         null,
                         null,
                         null);
@@ -121,38 +152,94 @@ public class SignupActivity extends AppCompatActivity {
 
         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
 
-        User user = new User();
-        user.setEmail( mEmailText.getText().toString());
+        if (user == null){
+            user = new User();
+            user.setUid("updated");
+        }
+
+        user.setEmail(mEmailText.getText().toString());
         user.setName(mNameText.getText().toString());
         user.setPhone(mPhoneText.getText().toString());
+        user.setPassword(user.generatePasword());
 
-        // Now that the content provider is set up, inserting rows of data is pretty simple.
-        // First create a ContentValues object to hold the data you want to insert.
-        ContentValues locationValues = new ContentValues();
+        ContentValues userValues = new ContentValues();
 
         // Then add the data, along with the corresponding name of the data type,
         // so the content provider knows what kind of value is being inserted.
-        locationValues.put(LunchContract.UserEntry.COLUMN_NAME, user.getName());
-        locationValues.put(LunchContract.UserEntry.COLUMN_EMAIL, user.getEmail());
-        locationValues.put(LunchContract.UserEntry.COLUMN_PHONE, user.getPhone());
+        userValues.put(LunchContract.UserEntry.COLUMN_NAME, user.getName());
+        userValues.put(LunchContract.UserEntry.COLUMN_EMAIL, user.getEmail());
+        userValues.put(LunchContract.UserEntry.COLUMN_PHONE, user.getPhone());
+        userValues.put(LunchContract.UserEntry.COLUMN_PASSWORD, user.getPassword());
+        userValues.put(LunchContract.UserEntry.COLUMN_UID, user.getUid());
 
 
-        // Finally, insert location data into the database.
-        Uri insertedUri = getApplicationContext().getContentResolver().insert(
-                LunchContract.UserEntry.CONTENT_URI,
-                locationValues
-        );
+        if (!is_user_registered){
+            mAuth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
+                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            Log.d(LOG_TAG, "createUserWithEmail:onComplete:" + task.isSuccessful());
+                            // If sign in fails, display a message to the user. If sign in succeeds
+                            // the auth state listener will be notified and logic to handle the
+                            // signed in user can be handled in the listener.
+                            if (!task.isSuccessful()) {
+                                Toast.makeText(getApplicationContext(), "Authentication failed.",
+                                        Toast.LENGTH_SHORT).show();
+                            }
 
-        long userId  = ContentUris.parseId(insertedUri);
+                            // ...
+                        }
+                    });
+        }
 
-        Log.d(LOG_TAG, "User is saved with id " + userId);
+        mAuth.signInWithEmailAndPassword(user.getEmail(), user.getPassword()).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                Log.d(LOG_TAG, "createUserWithEmail:onComplete:" + task.isSuccessful());
+                // If sign in fails, display a message to the user. If sign in succeeds
+                // the auth state listener will be notified and logic to handle the
+                // signed in user can be handled in the listener.
+                if (!task.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), "Authentication failed.",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
-        SharedPreferences sharedPreferences =
-                PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putBoolean(getString(R.string.is_user_registered), true);
-        editor.commit();
+        if (is_user_registered){
+            //TODO: update user
 
+            // Finally,update data into the database.
+          String where =  LunchContract.UserEntry.TABLE_NAME +
+                    "." + LunchContract.UserEntry._ID + " = ? ";
+
+            long userId  = getApplicationContext().getContentResolver().
+                    update(LunchContract.UserEntry.CONTENT_URI,userValues,where,new String[]{Long.toString(user.getId())});
+
+            Log.d(LOG_TAG, "User is updated with id " + userId);
+
+        }else {
+            // Now that the content provider is set up, inserting rows of data is pretty simple.
+            // First create a ContentValues object to hold the data you want to insert.
+
+
+
+            // Finally, insert location data into the database.
+            Uri insertedUri = getApplicationContext().getContentResolver().insert(
+                    LunchContract.UserEntry.CONTENT_URI,
+                    userValues
+            );
+
+            long userId = ContentUris.parseId(insertedUri);
+
+            Log.d(LOG_TAG, "User is saved with id " + userId);
+
+            SharedPreferences sharedPreferences =
+                    PreferenceManager.getDefaultSharedPreferences(this);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean(getString(R.string.is_user_registered), true);
+            editor.commit();
+        }
         //sync data
         loadData();
 
@@ -196,6 +283,21 @@ public class SignupActivity extends AppCompatActivity {
                     validateEmail();
                     break;
             }
+        }
+    }
+
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAuth.addAuthStateListener(mAuthListener);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (mAuthListener != null) {
+            mAuth.removeAuthStateListener(mAuthListener);
         }
     }
 

@@ -125,6 +125,10 @@ public class LunchContract {
         // user's phone
         public static final String COLUMN_PHONE = "phone";
 
+        public static final String COLUMN_PASSWORD = "password";
+
+        public static final String COLUMN_UID = "uid";
+
         public static Uri buildUserUri(long id) {
             return ContentUris.withAppendedId(CONTENT_URI, id);
         }

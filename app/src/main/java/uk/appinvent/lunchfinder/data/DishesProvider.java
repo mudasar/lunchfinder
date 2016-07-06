@@ -20,6 +20,7 @@ public class DishesProvider extends ContentProvider {
     private LunchFinderDbHelper mOpenHelper;
 
     static final int USER = 300;
+    static final int USER_BY_ID = 301;
 
     static final int DISH = 100;
     static final int DISH_BY_ID = 101;
@@ -73,6 +74,7 @@ public class DishesProvider extends ContentProvider {
         matcher.addURI(authority, LunchContract.PATH_DISH + "/*/*", DISH_WITH_CATEGORY);
 
         matcher.addURI(authority, LunchContract.PATH_USER, USER);
+        matcher.addURI(authority, LunchContract.PATH_USER + "/#", USER_BY_ID);
         return matcher;
     }
 
@@ -189,6 +191,8 @@ public class DishesProvider extends ContentProvider {
             case DISH:
                 return LunchContract.DishEntry.CONTENT_TYPE;
             case USER:
+                return LunchContract.UserEntry.CONTENT_TYPE;
+            case USER_BY_ID:
                 return LunchContract.UserEntry.CONTENT_TYPE;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);

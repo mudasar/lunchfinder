@@ -8,25 +8,32 @@ import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v7.widget.CardView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
 import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.Map;
 
 import uk.appinvent.lunchfinder.data.Dish;
 import uk.appinvent.lunchfinder.data.DishLoader;
 import uk.appinvent.lunchfinder.data.LunchContract;
+import uk.appinvent.lunchfinder.data.Order;
+import uk.appinvent.lunchfinder.data.User;
 
 
 /**
@@ -48,7 +55,11 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
 
     private Dish dish;
 
+    private FirebaseAuth mAuth;
+    private FirebaseAuth.AuthStateListener mAuthListener;
 
+    FirebaseDatabase mDatabase ;
+    DatabaseReference mDatabaseRef;
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -65,7 +76,7 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
     private TextView short_description;
     private TextView price;
     private Button order_now;
-
+    private User user;
 
     public DishDetailFragment() {
         // Required empty public constructor
@@ -98,8 +109,46 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
             Log.d(LOG_TAG, mUri.toString());
             mTransitionAnimation = arguments.getBoolean(DishDetailFragment.DETAIL_TRANSITION_ANIMATION, false);
         }
+        mAuth = FirebaseAuth.getInstance();
+        mDatabase = FirebaseDatabase.getInstance();
+        mDatabaseRef = mDatabase.getReference();
+        try {
+            // First, check if the location with this city name exists in the db
+            Cursor userCursor =getActivity().getContentResolver().query(
+                    LunchContract.UserEntry.CONTENT_URI,
+                    DishLoader.UserQuery.PROJECTION,
+                    null,
+                    null,
+                    null);
 
+            if(userCursor != null)
+            {
+                if (userCursor.moveToFirst()) {
+                    user = User.fromCursor(userCursor);
+                }
+            }
+        }catch (Exception e){
+            //TODO: remave strack trace when realese
+            e.printStackTrace();
+            Log.d(LOG_TAG,e.getMessage());
+        }
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
+                if (firebaseUser != null) {
+                    // User is signed in
+                    user.setUid(firebaseUser.getUid());
+                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + firebaseUser.getUid());
+                } else {
+                    // User is signed out
+                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
+                }
+            }
+        };
     }
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -117,10 +166,29 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
             @Override
             public void onClick(View v) {
 
+
+
+                String key = mDatabaseRef.child("orders").push().getKey();
+                Order order = new Order(1, dish.getRefId(), dish.getName(), dish.getImageUrl(), 1,"",
+                        user.getName(), "new", user.getUid());
+                Map<String, Object> postValues = order.toMap();
+
+                Map<String, Object> childUpdates = new HashMap<>();
+                childUpdates.put("/orders/" + key, postValues);
+                childUpdates.put("/user-orders/" + user.getUid() + "/" + key, postValues);
+
+                mDatabaseRef.updateChildren(childUpdates);
+
+
                 //TODO: open order activity
-                Toast.makeText(getActivity(), "Order now", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Your order is placed now", Toast.LENGTH_SHORT).show();
+
+                //redirect user to main activity
+                Intent intent = new Intent(getActivity(), MainActivity.class);
+                startActivity(intent);
             }
         });
+
         FloatingActionButton fab = (FloatingActionButton) view.findViewById(R.id.share_fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -139,6 +207,20 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        mAuth.addAuthStateListener(mAuthListener);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (mAuthListener != null) {
+            mAuth.removeAuthStateListener(mAuthListener);
+        }
+    }
+
+    @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         if ( null != mUri ) {
 
@@ -146,10 +228,11 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
             DishLoader dishLoader = DishLoader.newInstanceForDishId(getActivity(),dishId);
             return dishLoader;
         }
-        ViewParent vp = getView().getParent();
-        if ( vp instanceof CardView) {
-            ((View)vp).setVisibility(View.INVISIBLE);
-        }
+
+//        ViewParent vp = getView().getParent();
+//        if ( vp instanceof CardView) {
+//            ((View)vp).setVisibility(View.INVISIBLE);
+//        }
         return null;
     }
 
@@ -200,6 +283,7 @@ public class DishDetailFragment extends Fragment implements LoaderManager.Loader
 
         }
     }
+
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {

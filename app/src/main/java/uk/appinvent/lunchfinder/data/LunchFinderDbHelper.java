@@ -48,7 +48,10 @@ public class LunchFinderDbHelper extends SQLiteOpenHelper {
                 // the ID of the location entry associated with this weather data
                 LunchContract.UserEntry.COLUMN_NAME + " TEXT NOT NULL, " +
                 LunchContract.UserEntry.COLUMN_EMAIL + " TEXT NOT NULL, " +
-                LunchContract.UserEntry.COLUMN_PHONE + " TEXT NOT NULL " + ");";
+                LunchContract.UserEntry.COLUMN_PHONE + " TEXT NOT NULL, "+
+                LunchContract.UserEntry.COLUMN_PASSWORD + " TEXT NOT NULL, "+
+                LunchContract.UserEntry.COLUMN_UID + " TEXT NOT NULL "
+                + ");";
 
         db.execSQL(SQL_CREATE_DISH_TABLE);
         db.execSQL(SQL_CREATE_USER_TABLE);
